@@ -5,13 +5,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     name: بناء المود
@@ -22,43 +15,24 @@ jobs:
       - name: 1. سحب الملفات من المستودع
         uses: actions/checkout@v4
 
-      - name: 2. تجهيز Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: 3. تثبيت Pillow (لمعالجة الصور)
-        run: python -m pip install --quiet pillow
-
-      - name: 4. تحويل الأغاني إلى ogg (حد أقصى 8 دقائق)
-        run: python tools/convert_songs.py
-
-      - name: 5. تجهيز خلفية الهاتف (GIF أو صورة)
-        run: python tools/make_background.py
-
-      - name: 6. تثبيت Java 17 لماينكرافت 1.20.1
+      - name: 2. تثبيت Java 17 لماينكرافت 1.20.1
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: 7. تجهيز أداة البناء Gradle
+      - name: 3. تجهيز أداة البناء Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.1.1'
 
-      - name: 8. بناء المود
+      - name: 4. بناء المود
         run: gradle build --no-daemon --stacktrace
 
-      - name: 9. رفع ملف المود الجاهز للتحميل
+      - name: 5. رفع ملف المود الجاهز للتحميل
         uses: actions/upload-artifact@v4
         with:
           name: musicphone-jar
           path: build/libs/*.jar
           if-no-files-found: error
-
-      - name: 10. نشر المود في Releases (عند إنشاء Tag مثل v1.0.0)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/libs/*.jar
+          
