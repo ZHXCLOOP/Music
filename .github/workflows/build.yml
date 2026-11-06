@@ -15,7 +15,26 @@ jobs:
       - name: 1. سحب الملفات من المستودع
         uses: actions/checkout@v4
 
-      - name: 2. فحص ملفات المشروع
+      - name: 2. فك ضغط المشروع تلقائياً (إذا رُفع كملف zip)
+        run: |
+          if [ ! -f build.gradle ] && ls ./*.zip >/dev/null 2>&1; then
+            rm -rf /tmp/unz && mkdir -p /tmp/unz
+            for z in ./*.zip; do
+              echo "فك ضغط: $z"
+              unzip -q -o "$z" -d /tmp/unz
+            done
+            found=$(find /tmp/unz -name build.gradle -not -path '*/__MACOSX/*' | head -n 1)
+            if [ -n "$found" ]; then
+              cp -a "$(dirname "$found")"/. .
+              echo "تم نسخ ملفات المشروع إلى الجذر"
+            else
+              echo "::error::لم أجد build.gradle داخل ملف الـ zip"
+            fi
+          else
+            echo "لا حاجة لفك الضغط"
+          fi
+
+      - name: 3. فحص ملفات المشروع
         run: |
           echo "الملفات الموجودة في جذر المستودع:"
           ls -la
@@ -28,21 +47,21 @@ jobs:
           done
           exit $missing
 
-      - name: 3. تثبيت Java 17 لماينكرافت 1.20.1
+      - name: 4. تثبيت Java 17 لماينكرافت 1.20.1
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: 4. تجهيز أداة البناء Gradle
+      - name: 5. تجهيز أداة البناء Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.1.1'
 
-      - name: 5. بناء المود
+      - name: 6. بناء المود
         run: gradle build --no-daemon --console=plain
 
-      - name: 6. رفع ملف المود الجاهز للتحميل
+      - name: 7. رفع ملف المود الجاهز للتحميل
         uses: actions/upload-artifact@v4
         with:
           name: musicphone-jar
